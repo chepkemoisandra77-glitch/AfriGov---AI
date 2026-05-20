@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AfriGov AI — Africa AI Governance Gap Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e0a;
+    --surface: #111611;
+    --surface2: #171e17;
+    --border: #1f2b1f;
+    --green: #4ade80;
+    --green-dim: #166534;
+    --yellow: #fbbf24;
+    --yellow-dim: #78350f;
+    --red: #f87171;
+    --red-dim: #7f1d1d;
+    --blue: #60a5fa;
+    --text: #e2e8e2;
+    --muted: #6b7a6b;
+    --accent: #4ade80;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(74,222,128,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(74,222,128,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 28px 0;
+    position: sticky;
+    top: 0;
+    background: rgba(10,14,10,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-mark {
+    width: 36px; height: 36px;
+    border: 2px solid var(--green);
+    display: grid;
+    place-items: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: -1px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text span { color: var(--green); }
+
+  .header-meta {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 64px 0 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -2px;
+    margin-bottom: 20px;
+  }
+
+  .hero h1 em {
+    color: var(--green);
+    font-style: normal;
+  }
+
+  .hero p {
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 32px;
+  }
+
+  /* SUMMARY STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+
+  .stat-box {
+    background: var(--surface);
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-box::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-color, var(--green));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.6s ease;
+  }
+
+  .stat-box.loaded::after { transform: scaleX(1); }
+
+  .stat-num {
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: var(--accent-color, var(--green));
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* FILTERS */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+
+  .filter-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-right: 4px;
+  }
+
+  .filter-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 7px 16px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+
+  .filter-btn:hover { border-color: var(--green); color: var(--green); }
+  .filter-btn.active { background: var(--green); color: var(--bg); border-color: var(--green); }
+
+  .search-box {
+    margin-left: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 7px 14px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    width: 200px;
+    transition: border-color 0.15s;
+  }
+
+  .search-box:focus { border-color: var(--green); }
+  .search-box::placeholder { color: var(--muted); }
+
+  /* COUNTRY GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    margin-bottom: 64px;
+  }
+
+  .card {
+    background: var(--surface);
+    padding: 28px;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+    overflow: hidden;
+    animation: fadeIn 0.4s ease both;
+  }
+
+  .card:hover { background: var(--surface2); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  .country-name {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .country-region {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .score-badge {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .score-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    text-align: right;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* PILLAR BARS */
+  .pillars { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+
+  .pillar-row { display: flex; align-items: center; gap: 10px; }
+
+  .pillar-name {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    width: 90px;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+
+  .pillar-track {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  .pillar-fill {
+    height: 100%;
+    border-radius: 0;
+    transition: width 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .pillar-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    width: 20px;
+    text-align: right;
+  }
+
+  /* STATUS TAGS */
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: 1px solid;
+  }
+
+  .tag.yes { border-color: var(--green-dim); color: var(--green); background: rgba(74,222,128,0.06); }
+  .tag.partial { border-color: var(--yellow-dim); color: var(--yellow); background: rgba(251,191,36,0.06); }
+  .tag.no { border-color: #2a1515; color: #6b3030; background: transparent; }
+
+  /* LEVEL COLORS */
+  .lvl-high { color: var(--green); }
+  .lvl-mid  { color: var(--yellow); }
+  .lvl-low  { color: var(--red); }
+
+  .bar-high { background: var(--green); }
+  .bar-mid  { background: var(--yellow); }
+  .bar-low  { background: var(--red); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 200;
+    display: none;
+    place-items: center;
+    padding: 24px;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.open { display: grid; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    max-width: 640px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-header {
+    padding: 32px 32px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .modal-close {
+    background: none; border: none;
+    color: var(--muted); font-size: 20px;
+    cursor: pointer; line-height: 1;
+    padding: 4px;
+  }
+
+  .modal-close:hover { color: var(--text); }
+
+  .modal-body { padding: 28px 32px 32px; }
+
+  .modal-section { margin-bottom: 28px; }
+
+  .modal-section-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--green);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .modal-detail {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #a0b0a0;
+  }
+
+  .modal-detail strong { color: var(--text); }
+
+  .gap-list { list-style: none; }
+  .gap-list li {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .gap-list li::before { content: '→'; color: var(--red); }
+  .gap-list li.done { color: #4a7a4a; }
+  .gap-list li.done::before { content: '✓'; color: var(--green); }
+
+  /* LEGEND */
+  .legend {
+    display: flex; gap: 24px; margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 0;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    margin-top: 0;
+  }
+
+  .footer-inner {
+    max-width: 1200px; margin: 0 auto; padding: 0 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 16px;
+  }
+
+  .footer-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; color: var(--muted); line-height: 1.8;
+  }
+
+  .built-by {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    text-align: right;
+  }
+
+  .built-by span { color: var(--green); }
+
+  @media (max-width: 640px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark">AG</div>
+      <div class="logo-text">Afri<span>Gov</span> AI</div>
+    </div>
+    <div class="header-meta">
+      Africa AI Governance Gap Tracker<br>
+      Data: 2024–2025 · 54 Countries
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="hero">
+    <div class="hero-tag">// Global South AI Policy Intelligence</div>
+    <h1>Who is governing<br><em>Africa's AI future?</em></h1>
+    <p>A real-time tracker of AI policy frameworks, national strategies, data protection laws, and regulatory readiness across all 54 African nations — exposing the governance gap before it widens.</p>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-box" style="--accent-color: var(--green)">
+      <div class="stat-num" id="s1">0</div>
+      <div class="stat-label">Have AI Strategy</div>
+    </div>
+    <div class="stat-box" style="--accent-color: var(--yellow)">
+      <div class="stat-num" id="s2">0</div>
+      <div class="stat-label">Data Protection Laws</div>
+    </div>
+    <div class="stat-box" style="--accent-color: var(--red)">
+      <div class="stat-num" id="s3">0</div>
+      <div class="stat-label">No AI Policy at All</div>
+    </div>
+    <div class="stat-box" style="--accent-color: var(--blue)">
+      <div class="stat-num" id="s4">0</div>
+      <div class="stat-label">Avg Governance Score</div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <span class="filter-label">FILTER:</span>
+    <button class="filter-btn active" onclick="filter('all', this)">All</button>
+    <button class="filter-btn" onclick="filter('high', this)">Strong</button>
+    <button class="filter-btn" onclick="filter('mid', this)">Developing</button>
+    <button class="filter-btn" onclick="filter('low', this)">Critical Gap</button>
+    <input class="search-box" placeholder="Search country..." oninput="search(this.value)" />
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Score 60–100: Strong</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>Score 30–59: Developing</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Score 0–29: Critical Gap</div>
+  </div>
+
+  <!-- GRID -->
+  <div class="grid" id="grid"></div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-text">
+      Sources: ITU, UNCTAD, African Union AI Strategy, national government portals<br>
+      Scores are composite indicators. Last updated: 2025. For research purposes.
+    </div>
+    <div class="built-by">Built by <span>Sandra Chepkemoi</span><br>Kenyatta University · AfriGov AI Project</div>
+  </div>
+</footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal" id="modalBox">
+    <div class="modal-header">
+      <div>
+        <div id="mCountry" style="font-size:24px;font-weight:800;letter-spacing:-0.5px"></div>
+        <div id="mRegion" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:1px;text-transform:uppercase"></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <div class="modal-section-title">Overview</div>
+        <div class="modal-detail" id="mOverview"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Governance Pillars</div>
+        <div id="mPillars"></div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-title">Key Gaps & Actions</div>
+        <ul class="gap-list" id="mGaps"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const countries = [
+  { name:"Kenya", region:"East Africa", score:72, pillars:{strategy:85,dataProt:80,regulation:60,capacity:70,inclusion:65}, tags:["AI Strategy","Data Law","AU Member"], detail:"Kenya is one of Africa's most advanced AI governance environments. The national AI strategy, published in 2021, outlines priorities across health, agriculture, and fintech. The Data Protection Act (2019) provides a strong legal basis for data rights, though enforcement remains limited outside major urban centres.", gaps:["Independent AI regulatory body not yet established","Limited rural digital infrastructure","Algorithmic accountability framework missing","AI procurement standards for government not defined"], done:["National AI Strategy (2021)","Data Protection Act (2019)","AU AI Continental Strategy signatory"] },
+  { name:"Rwanda", region:"East Africa", score:78, pillars:{strategy:90,dataProt:75,regulation:70,capacity:80,inclusion:65}, tags:["AI Strategy","Data Law","Digital Hub"], detail:"Rwanda has positioned itself as Africa's leading digital economy with the Smart Rwanda Master Plan and strong institutional support for AI through the Rwanda ICT Chamber. Kigali Innovation City is a flagship initiative. Strong alignment with AU AI strategy.", gaps:["AI ethics framework not yet legislated","Limited AI talent pipeline outside Kigali","Explainability standards for public sector AI absent"], done:["Smart Rwanda Master Plan","Data Protection Law (2021)","AI policy integrated into national development plan"] },
+  { name:"South Africa", region:"Southern Africa", score:74, pillars:{strategy:80,dataProt:85,regulation:65,capacity:78,inclusion:55}, tags:["AI Strategy","Data Law","POPIA"], detail:"South Africa has the most developed data protection regime on the continent through POPIA (2021). The Presidential Commission on the Fourth Industrial Revolution (PC4IR) produced AI recommendations. However, translating policy into binding regulation lags behind.", gaps:["No dedicated AI Act or binding AI regulation","Digital divide between urban and rural populations","AI bias in credit and justice systems documented"], done:["POPIA (2021) — strongest data law in Africa","PC4IR AI recommendations","National AI Research Institute (CSIR)"] },
+  { name:"Egypt", region:"North Africa", score:70, pillars:{strategy:85,dataProt:60,regulation:60,capacity:75,inclusion:70}, tags:["AI Strategy","Research Hub"], detail:"Egypt launched its National AI Strategy in 2019, one of the earliest on the continent. Strong focus on Arabic-language NLP and AI in government services. Egypt AI is the national centre driving implementation, with partnerships with leading universities.", gaps:["Data protection law weak relative to AI ambitions","Freedom of expression concerns around AI surveillance tools","Limited civil society participation in AI governance"], done:["National AI Strategy (2019)","Egypt AI national centre","Arabic NLP research programs"] },
+  { name:"Nigeria", region:"West Africa", score:58, pillars:{strategy:70,dataProt:65,regulation:45,capacity:65,inclusion:45}, tags:["AI Strategy","Draft Data Law"], detail:"Nigeria published its National AI Policy in 2024 and has a large and growing AI startup ecosystem, particularly in Lagos. However, implementation infrastructure is weak and the data protection regime remains inconsistently enforced.", gaps:["AI regulation bill stalled in legislature","Inconsistent electricity limits AI compute access","No algorithmic impact assessment requirement","Fragmented state-level digital policies"], done:["National AI Policy (2024)","Nigeria Data Protection Act","NITDA digital governance framework"] },
+  { name:"Ghana", region:"West Africa", score:62, pillars:{strategy:75,dataProt:70,regulation:55,capacity:60,inclusion:50}, tags:["AI Strategy","Data Law"], detail:"Ghana launched its National AI Policy in 2023, with strong focus on agriculture and public health applications. The Data Protection Commission is active and well-regarded on the continent. Ghana is seen as a model for smaller economies.", gaps:["AI regulatory sandbox not yet operational","Limited AI research funding in universities","AI ethics education absent from curriculum"], done:["National AI Policy (2023)","Data Protection Act (2012, updated)","Ghana Digital Economy Policy"] },
+  { name:"Ethiopia", region:"East Africa", score:44, pillars:{strategy:55,dataProt:35,regulation:35,capacity:50,inclusion:45}, tags:["Draft Strategy"], detail:"Ethiopia is a rapidly growing tech economy with significant mobile penetration, but AI governance lags behind. A national AI strategy has been drafted but not yet formally adopted. Significant digital infrastructure investment is underway through the Digital Ethiopia 2025 plan.", gaps:["No adopted national AI strategy","No comprehensive data protection law","Limited independent tech regulatory capacity","AI governance largely absent from parliament"], done:["Digital Ethiopia 2025 plan","Ethio Telecom digital expansion","University AI research programs growing"] },
+  { name:"Tanzania", region:"East Africa", score:38, pillars:{strategy:40,dataProt:45,regulation:30,capacity:40,inclusion:35}, tags:["No AI Policy"], detail:"Tanzania has strong mobile money infrastructure (M-Pesa) but AI governance is nascent. Digital policy is fragmented. The Electronic and Postal Communications Act addresses some digital concerns but falls short of a modern AI governance framework.", gaps:["No national AI strategy","No dedicated data protection authority","AI not yet integrated into national development plans","Limited AI literacy programs"], done:["Basic digital economy policy","Mobile money regulatory framework","East Africa Community digital policy participation"] },
+  { name:"Uganda", region:"East Africa", score:35, pillars:{strategy:35,dataProt:45,regulation:25,capacity:40,inclusion:30}, tags:["No AI Policy"], detail:"Uganda has a Data Protection and Privacy Act (2019) which provides some foundation, but there is no AI-specific governance framework. The government has expressed interest in AI for public services but no strategy has been formalized.", gaps:["No national AI strategy","AI regulation not on legislative agenda","Digital skills gap in public sector","Civil society excluded from tech policy"], done:["Data Protection and Privacy Act (2019)","National Information Technology Authority","NITA digital governance coordination"] },
+  { name:"Senegal", region:"West Africa", score:52, pillars:{strategy:65,dataProt:55,regulation:45,capacity:50,inclusion:45}, tags:["Draft Strategy","Data Law"], detail:"Senegal is developing its digital economy through the Sénégal Numérique 2025 plan, with AI identified as a priority sector. A personal data protection commission (CDP) is operational. Francophone Africa leadership on digital policy.", gaps:["AI strategy not yet formally adopted","Regulatory capacity limited","Language technology for Wolof and Pulaar underdeveloped","Limited AI research funding"], done:["CDP data protection commission","Sénégal Numérique 2025","ECOWAS digital economy participation"] },
+  { name:"Morocco", region:"North Africa", score:65, pillars:{strategy:75,dataProt:70,regulation:58,capacity:68,inclusion:55}, tags:["AI Strategy","Data Law"], detail:"Morocco launched its Maroc Digital 2020 and subsequent strategies with AI embedded as a priority. The CNDP (national data protection commission) is active. Strong EU alignment due to geographic and economic ties creates relatively robust digital rights standards.", gaps:["AI Act equivalent not yet in place","Arabic and Amazigh NLP still underfunded","Rural digital divide significant"], done:["Maroc Digital strategy","CNDP data protection authority","National AI research commission"] },
+  { name:"Tunisia", region:"North Africa", score:60, pillars:{strategy:70,dataProt:68,regulation:52,capacity:62,inclusion:48}, tags:["AI Strategy","Data Law"], detail:"Tunisia has one of North Africa's more progressive digital governance environments, with an active civil society and relatively free internet. The AI national strategy focuses on smart cities, health and education. Political instability post-2021 has slowed implementation.", gaps:["Political instability affecting implementation","AI ethics standards not yet adopted","Limited public participation in AI policy"], done:["National AI Strategy","Organic Data Protection Law","Strong civil society digital rights organizations"] },
+  { name:"Zimbabwe", region:"Southern Africa", score:28, pillars:{strategy:25,dataProt:30,regulation:20,capacity:30,inclusion:35}, tags:["No AI Policy"], detail:"Zimbabwe faces significant economic and infrastructure constraints that limit AI governance development. There is no national AI strategy. The Cyber and Data Protection Act (2021) provides some framework for data rights but enforcement is weak and digital access is limited.", gaps:["No national AI strategy","Weak data protection enforcement","Internet access limited and expensive","Political environment constrains free digital expression","No AI funding or research institutions"], done:["Cyber and Data Protection Act (2021)","Basic ICT policy framework"] },
+  { name:"Zambia", region:"Southern Africa", score:32, pillars:{strategy:30,dataProt:40,regulation:25,capacity:35,inclusion:30}, tags:["No AI Policy"], detail:"Zambia has a Data Protection Act and an active Zambia ICT Authority, but AI governance is absent from the policy agenda. Digital infrastructure is growing but concentrated in Lusaka. AI awareness in government is limited.", gaps:["No AI strategy or roadmap","Limited AI awareness in government","Digital divide between Lusaka and rest of country","No AI research capacity in universities"], done:["Data Protection Act","Zambia ICT Authority","Smart Zambia digital transformation initiative"] },
+  { name:"Cameroon", region:"Central Africa", score:30, pillars:{strategy:30,dataProt:28,regulation:22,capacity:35,inclusion:35}, tags:["No AI Policy"], detail:"Cameroon is one of Central Africa's largest economies but digital governance lags. There is no data protection law or AI strategy. The government has expressed interest in a digital economy but implementation is slow due to institutional capacity gaps.", gaps:["No data protection law","No AI strategy","Limited digital infrastructure outside Douala/Yaoundé","Political instability in Anglophone regions"], done:["Basic ICT ministry","Francophone digital economy community participation"] },
+  { name:"Côte d'Ivoire", region:"West Africa", score:48, pillars:{strategy:55,dataProt:50,regulation:40,capacity:50,inclusion:45}, tags:["Draft Strategy","Data Law"], detail:"Côte d'Ivoire has made progress through the Côte d'Ivoire Numérique 2020 plan and has a data protection authority (ARTCI). AI is emerging as a priority in financial technology, agritech, and public services but governance frameworks remain nascent.", gaps:["No dedicated AI strategy","Data protection enforcement weak","Limited AI research ecosystem","Francophone AI governance resources scarce"], done:["ARTCI data protection authority","Côte d'Ivoire Numérique plan","Mobile money regulatory leadership in WAEMU"] },
+  { name:"Angola", region:"Southern Africa", score:26, pillars:{strategy:25,dataProt:30,regulation:18,capacity:28,inclusion:30}, tags:["No AI Policy"], detail:"Angola's economy has historically been oil-dependent with limited digital diversification. AI governance is essentially absent. Some digital economy initiatives are underway through MTTI (Ministry of Telecommunications), but AI is not yet on the policy agenda.", gaps:["No national AI strategy","No data protection legislation","Very limited digital infrastructure","No AI research capacity","Oil-dependent economy limits digital investment"], done:["Basic ICT policy","MTTI telecommunications ministry","Angola Digital Plan early stages"] },
+  { name:"Mozambique", region:"Southern Africa", score:22, pillars:{strategy:20,dataProt:25,regulation:15,capacity:25,inclusion:25}, tags:["No AI Policy"], detail:"Mozambique is among the least digitally governed nations on the continent. Persistent poverty, limited electricity access, and governance challenges mean AI policy is not a current priority. Very limited connectivity outside Maputo.", gaps:["No AI strategy","No data protection law","Electricity access limits digital growth","No AI awareness in government","Critical digital infrastructure gaps"], done:["Basic ICT sector regulation","Mobile connectivity slowly expanding"] },
+  { name:"Botswana", region:"Southern Africa", score:55, pillars:{strategy:60,dataProt:60,regulation:50,capacity:58,inclusion:45}, tags:["AI Strategy","Data Law"], detail:"Botswana punches above its weight on governance. The Botswana Data Protection Act (2018) is among the earlier ones on the continent. A digital economy blueprint includes AI applications. Relatively strong institutions and rule of law provide a good foundation.", gaps:["AI strategy not comprehensive","Limited technical AI talent","Small market limits AI investment","Rural digital access gaps"], done:["Data Protection Act (2018)","Digital economy blueprint","Strong institutional governance foundation"] },
+  { name:"Namibia", region:"Southern Africa", score:48, pillars:{strategy:50,dataProt:55,regulation:40,capacity:50,inclusion:40}, tags:["Draft Strategy","Data Law"], detail:"Namibia is developing its National Digital Economy Policy which includes AI elements. A data protection bill has been in development. Strong governance institutions relative to region, but limited population and economic base constrain AI ecosystem development.", gaps:["No finalized AI strategy","Data protection bill not yet enacted","Limited AI talent and universities","Small economy limits AI investment"], done:["ICT Policy framework","National Digital Economy Policy development","Strong rule of law foundation"] },
+];
+
+let filtered = [...countries];
+let activeFilter = 'all';
+let searchVal = '';
+
+function scoreClass(s) {
+  return s >= 60 ? 'high' : s >= 30 ? 'mid' : 'low';
+}
+
+function colorClass(s) {
+  return s >= 60 ? 'lvl-high' : s >= 30 ? 'lvl-mid' : 'lvl-low';
+}
+
+function barClass(s) {
+  return s >= 60 ? 'bar-high' : s >= 30 ? 'bar-mid' : 'bar-low';
+}
+
+function tagStatus(hasIt) {
+  return hasIt ? 'yes' : 'no';
+}
+
+function renderCards() {
+  const grid = document.getElementById('grid');
+  let data = countries.filter(c => {
+    const matchFilter = activeFilter === 'all' ||
+      (activeFilter === 'high' && c.score >= 60) ||
+      (activeFilter === 'mid' && c.score >= 30 && c.score < 60) ||
+      (activeFilter === 'low' && c.score < 30);
+    const matchSearch = c.name.toLowerCase().includes(searchVal.toLowerCase());
+    return matchFilter && matchSearch;
+  });
+
+  grid.innerHTML = data.map((c, i) => {
+    const cls = scoreClass(c.score);
+    const p = c.pillars;
+    const delay = i * 40;
+    return `
+    <div class="card" style="animation-delay:${delay}ms" onclick="openModal('${c.name}')">
+      <div class="card-top">
+        <div>
+          <div class="country-name">${c.name}</div>
+          <div class="country-region">${c.region}</div>
+        </div>
+        <div>
+          <div class="score-badge ${colorClass(c.score)}">${c.score}</div>
+          <div class="score-label">/100</div>
+        </div>
+      </div>
+      <div class="pillars">
+        ${Object.entries(p).map(([k,v]) => `
+          <div class="pillar-row">
+            <div class="pillar-name">${k.replace('dataProt','Data Prot.').replace('strategy','Strategy').replace('regulation','Regulation').replace('capacity','Capacity').replace('inclusion','Inclusion')}</div>
+            <div class="pillar-track"><div class="pillar-fill ${barClass(v)}" style="width:${v}%"></div></div>
+            <div class="pillar-val">${v}</div>
+          </div>`).join('')}
+      </div>
+      <div class="tags">
+        ${c.tags.map(t => {
+          let cls = t.includes('No') ? 'no' : t.includes('Draft') ? 'partial' : 'yes';
+          return `<span class="tag ${cls}">${t}</span>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // animate stat bars
+  setTimeout(() => {
+    document.querySelectorAll('.stat-box').forEach(b => b.classList.add('loaded'));
+  }, 200);
+}
+
+function filter(type, btn) {
+  activeFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+
+function search(val) {
+  searchVal = val;
+  renderCards();
+}
+
+function animateCount(id, target, suffix='') {
+  const el = document.getElementById(id);
+  let cur = 0;
+  const step = target / 40;
+  const timer = setInterval(() => {
+    cur = Math.min(cur + step, target);
+    el.textContent = Math.round(cur) + suffix;
+    if (cur >= target) clearInterval(timer);
+  }, 25);
+}
+
+function openModal(name) {
+  const c = countries.find(x => x.name === name);
+  if (!c) return;
+  document.getElementById('mCountry').textContent = c.name;
+  document.getElementById('mRegion').textContent = c.region + ' · Governance Score: ' + c.score + '/100';
+  document.getElementById('mOverview').innerHTML = c.detail;
+
+  const p = c.pillars;
+  document.getElementById('mPillars').innerHTML = Object.entries(p).map(([k,v]) => `
+    <div class="pillar-row" style="margin-bottom:10px">
+      <div class="pillar-name" style="width:110px">${k.replace('dataProt','Data Protection').replace('strategy','Strategy').replace('regulation','Regulation').replace('capacity','Capacity').replace('inclusion','Inclusion')}</div>
+      <div class="pillar-track" style="flex:1"><div class="pillar-fill ${barClass(v)}" style="width:${v}%"></div></div>
+      <div class="pillar-val" style="margin-left:10px">${v}/100</div>
+    </div>`).join('');
+
+  document.getElementById('mGaps').innerHTML = [
+    ...c.done.map(d => `<li class="done">${d}</li>`),
+    ...c.gaps.map(g => `<li>${g}</li>`)
+  ].join('');
+
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal')) {
+    document.getElementById('modal').classList.remove('open');
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('modal').classList.remove('open');
+});
+
+// Compute stats
+window.onload = () => {
+  const withStrategy = countries.filter(c => !c.tags.some(t => t === 'No AI Policy')).length;
+  const withData = countries.filter(c => c.pillars.dataProt >= 50).length;
+  const noPolicy = countries.filter(c => c.tags.includes('No AI Policy')).length;
+  const avg = Math.round(countries.reduce((a,c) => a+c.score,0) / countries.length);
+
+  animateCount('s1', withStrategy);
+  animateCount('s2', withData);
+  animateCount('s3', noPolicy);
+  animateCount('s4', avg, '/100');
+
+  renderCards();
+};
+</script>
+</body>
+</html>
